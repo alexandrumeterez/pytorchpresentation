@@ -3,23 +3,11 @@ import os
 import shutil
 import torch
 from simplemodel import SimpleModel
-
 from torchvision import transforms
+
 
 save_folder = "./data"
 model_folder = "./models"
-
-data_transforms = transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
-
-model = SimpleModel()
-model.load_state_dict(torch.load(model_folder + "/traditional.pt"))
-
 
 if not os.path.isdir(model_folder):
     os.mkdir(model_folder)

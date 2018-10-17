@@ -61,7 +61,13 @@ num_epochs = 6
 number_of_batches = len(train_loader)
 
 plt.ion()
+
 loss_values = []
+final_acc = 0
+
+# Train the network
+print("Training set")
+total = 0
 for epoch in range(num_epochs):
 
     running_loss = 0.0
@@ -69,24 +75,52 @@ for epoch in range(num_epochs):
     for batch_index, (images, labels) in enumerate(train_loader):
         images = images.to(device)
         labels = labels.to(device)
-
+        
         outputs = model(images)
         _, preds = torch.max(outputs, 1)
         loss = criterion(outputs, labels)
 
         optimizer.zero_grad()
+
+        # loss.backward() computes dloss/dx for every parameter x which has requires_grad=True. 
+        # These are accumulated into x.grad for every parameter x.
+
+
         loss.backward()
+        
+        # optimizer.step updates the value of x using the gradient x.grad.
         optimizer.step()
         
         
 
-        running_loss += loss.item() * images.size(0)
+        running_loss += loss.item()
         running_corrects += torch.sum(preds == labels.data)
-    epoch_loss = running_loss / len(dataset)
-    epoch_acc = running_corrects.double() / len(dataset)
-
+    epoch_loss = running_loss / (batch_size * len(train_loader))
+    epoch_acc = running_corrects.double() / (batch_size * len(train_loader))
+    final_acc = epoch_acc
     loss_values.append(epoch_loss)
     plt.plot(loss_values)
     plt.draw()
     plt.pause(0.1)
     print("Epoch: {0}, Loss: {1}, Acc: {2}".format(epoch, epoch_loss, epoch_acc))
+
+print("#" * 40)
+print("Test set")
+# Test the network
+model.eval()
+running_loss = 0
+running_corrects = 0
+total = 0
+with torch.no_grad():
+    for batch_index, (images, labels) in enumerate(test_loader):
+        images = images.to(device)
+        labels = labels.to(device)
+        
+        outputs = model(images)
+        _, preds = torch.max(outputs, 1)
+
+        running_loss += loss.item()
+        running_corrects += torch.sum(preds == labels.data)
+    epoch_loss = running_loss / (batch_size * len(test_loader))
+    epoch_acc = running_corrects.double() / (batch_size * len(test_loader))
+    print("Loss: {0}, Acc: {1}".format(epoch_loss, epoch_acc))
