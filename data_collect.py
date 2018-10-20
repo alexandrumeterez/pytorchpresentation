@@ -4,10 +4,22 @@ import shutil
 import torch
 from simplemodel import SimpleModel
 from torchvision import transforms
-
+import numpy as np
 
 save_folder = "./data"
 model_folder = "./models"
+is_predicting = False
+device = "cpu"
+model = SimpleModel()
+model.load_state_dict(torch.load(model_folder + '/frozen.pt'))
+data_transforms = transforms.Compose([
+        # transforms.Resize(256),
+        # transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
+        # transforms.RandomHorizontalFlip(),
+        # transforms.Resize(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
 if not os.path.isdir(model_folder):
     os.mkdir(model_folder)
@@ -56,13 +68,24 @@ while ret:
     ret, frame = cap.read()
     new_frame = frame.copy()
     cv2.putText(new_frame, f'Label: {current_label} with {imgs_collected[current_label]} pics', (10, 430), FONT, 1, (255,255,255))
-    cv2.imshow(CROP_WIN, new_frame)
 
+    
     resized = cv2.resize(frame, (224, 224))
+
+    if is_predicting:
+        with torch.no_grad():
+            img = data_transforms(resized).unsqueeze(0).to(device)
+            output = model(img).cpu()
+            output = output.numpy()
+        out_class = np.argmax(output)
+        cv2.putText(new_frame, f'Predicted: {out_class}', (10, 30), FONT, 1, (255,255,255))
+
     if is_recording:
         imgs_collected[current_label] += 1
         
         cv2.imwrite(save_folder + f"/{current_label}/{imgs_collected[current_label]}.png", resized)
+    cv2.imshow(CROP_WIN, new_frame)
+
     key = cv2.waitKey(1)
     if chr(key % 256) == "0":
         current_label = 0
@@ -80,3 +103,5 @@ while ret:
         imgs_collected[1] = 0
         imgs_collected[2] = 0
         is_recording = False
+    elif chr(key % 256) == 'p':
+        is_predicting = not is_predicting
